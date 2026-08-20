@@ -69,8 +69,8 @@ export const fallbackProjects = [
   {
     name: 'Climate-Linked Disease Surveillance IVR',
     description:
-      'IVR-based system for collecting public health data linked to climate patterns, with backend API integration feeding into analytics dashboards. Presented at ACDSA 2026.',
-    tech: ['Flask', 'IVR', 'REST APIs'],
+      'A mobile app for voice-based public health data collection, supporting English and Yoruba (Yoruba still in development). Collected data is sent to a cloud dashboard via API for processing and analysis. Presented at ACDSA 2026.',
+    tech: ['Flask', 'Mobile App', 'REST APIs'],
     live_url: null,
     github_url: 'https://github.com/alxLenno/IVR_FLASK',
     image_url: null,
@@ -102,8 +102,8 @@ export const fallbackProjects = [
   {
     name: 'AI Healthcare Assistant Chatbot',
     description:
-      'An LLM-powered chatbot delivering healthcare guidance in local languages, built on multilingual speech recognition and synthesis research.',
-    tech: ['Python', 'LLMs', 'ASR / TTS'],
+      'A WhatsApp-based LLM-powered chatbot delivering healthcare guidance in local languages, with a Python Flask backend connected via APIs.',
+    tech: ['Python', 'Flask', 'LLMs', 'WhatsApp API'],
     live_url: null,
     github_url: 'https://github.com/LennoxKK/afretec_asr_tts_backend',
     image_url: null,
