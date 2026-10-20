@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 from backend.auth import reset_login_throttle  # noqa: E402
 
 ADMIN_PASSWORD = 'correct horse battery staple'
+ALLOWED_ORIGIN = 'https://portfolio.example.test'
 
 
 @pytest.fixture(autouse=True)
@@ -37,10 +38,12 @@ def app(tmp_path, monkeypatch):
         'ADMIN_PASSWORD_HASH',
         generate_password_hash(ADMIN_PASSWORD, method='pbkdf2:sha256:600000'),
     )
+    monkeypatch.setenv('ADMIN_TOKEN_MAX_AGE', '43200')
+    monkeypatch.setenv('PUBLIC_BASE_URL', 'https://api.example.test')
+    monkeypatch.setenv('ALLOWED_ORIGINS', f'{ALLOWED_ORIGIN},https://*.vercel.app')
     monkeypatch.setenv('DATABASE_PATH', str(tmp_path / 'portfolio.db'))
     monkeypatch.setenv('MEDIA_ROOT', str(tmp_path / 'media'))
     monkeypatch.setenv('SPA_DIST', str(dist))
-    monkeypatch.setenv('SESSION_COOKIE_SECURE', '0')
 
     from backend import create_app
 
@@ -54,7 +57,13 @@ def client(app):
 
 
 @pytest.fixture
-def admin(client):
+def admin_token(client):
     response = client.post('/api/auth/login', json={'password': ADMIN_PASSWORD})
     assert response.status_code == 200
+    return response.get_json()['token']
+
+
+@pytest.fixture
+def admin(client, admin_token):
+    client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {admin_token}'
     return client

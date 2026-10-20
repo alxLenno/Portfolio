@@ -1,21 +1,26 @@
 # Lennox Kahati — Portfolio
 
-A React + Vite portfolio with a small Flask backend (SQLite) that serves the
-built site, the JSON API, the admin area, and uploaded media. It is designed to
-run as a single web app on [PythonAnywhere](https://www.pythonanywhere.com).
+The React site is hosted on Vercel; the API, admin, database, and uploads live in
+a small Flask app that runs on [PythonAnywhere](https://www.pythonanywhere.com).
 
 ## How it fits together
 
 | Piece | Where | Notes |
 | --- | --- | --- |
-| Public pages | `src/` (React) → `dist/` | Home, About, Projects, Research, Books, Contact… |
-| API | `backend/` (Flask) | `/api/projects`, `/api/papers`, `/api/books` |
-| Admin | `src/admin/` + `/api/auth` | Password login, create/edit/delete content |
+| Public pages + admin UI | Vercel (`dist/`) | `VITE_API_BASE_URL` points at the API |
+| API | PythonAnywhere (`backend/`) | `/api/projects`, `/api/papers`, `/api/books` |
 | Database | `instance/portfolio.db` (SQLite) | Auto-created on startup, ignored by git |
 | Uploads | `instance/media/` | Served at `/media/…`, ignored by git |
 
-Flask serves `dist/index.html` for every non-API route, so React Router works on
-refresh, and requests stay same-origin (no CORS, no cross-site cookies).
+Because the two origins differ, the API:
+
+- answers CORS requests from the configured origins, and
+- authenticates the admin with a signed **bearer token** (12 h) instead of a
+  cookie, since cross-site cookies are blocked by several browsers.
+
+Uploaded files are returned as absolute URLs built from `PUBLIC_BASE_URL` so the
+Vercel site can display them. If a local `dist/` build happens to exist, Flask
+will also serve it (handy for local checks), but PythonAnywhere does not need it.
 
 ## Local development
 
@@ -37,8 +42,8 @@ SECRET_KEY=…
 # flask --app backend hash-password   (paste the result in single quotes)
 ADMIN_PASSWORD_HASH='pbkdf2:sha256:600000$…'
 
-# Plain-HTTP localhost only; keep 1 (the default) on PythonAnywhere.
-SESSION_COOKIE_SECURE=0
+# Leave empty for local work; only needed where the API is public.
+PUBLIC_BASE_URL=
 ```
 
 Then start both processes:
@@ -48,20 +53,12 @@ flask --app backend init-db      # create the tables (also happens on startup)
 flask --app backend seed         # optional: load the starter content
 npm install
 npm run dev:api                  # Flask on http://127.0.0.1:5001
-npm run dev                      # Vite on http://127.0.0.1:5173
+npm run dev                      # Vite on http://localhost:5173
 ```
 
-Open <http://127.0.0.1:5173> for the site and
-<http://127.0.0.1:5173/admin> for the admin area. Vite proxies `/api` and
-`/media` to Flask.
-
-To preview the production setup locally (Flask serving the built site):
-
-```bash
-npm run build
-flask --app backend run --port 5001
-# open http://127.0.0.1:5001
-```
+Open <http://localhost:5173> and <http://localhost:5173/admin>. Vite proxies
+`/api` and `/media` to Flask, so the frontend stays same-origin in development
+and no CORS setup is needed.
 
 Run the backend tests with `pytest backend/tests` (or `npm run test:api` from an
 activated virtualenv).
@@ -69,36 +66,42 @@ activated virtualenv).
 ## Content and data
 
 - **Static copy** (profile, experience, skills, education, certifications) lives
-  in [`src/data.js`](src/data.js) and is part of the React app.
+  in [`src/data.js`](src/data.js) and ships with the React app.
 - **Editable content** (projects, research papers, books) lives in SQLite and is
-  managed from `/admin`. Changes show up on the public site within a minute
-  (the pages poll the API) or immediately on reload.
-- **Seed data** comes from the same project/paper/book fallbacks in
-  `src/data.js`, exported to `backend/seed.json`:
+  managed from `/admin`. Public pages poll the API every 45 s, so changes appear
+  within a minute or immediately on reload.
+- **Seed data** comes from the project/paper/book fallbacks in `src/data.js`,
+  exported to `backend/seed.json`:
 
   ```bash
-  npm run seed:export                 # optional, only if data.js changed
-  flask --app backend seed            # idempotent; use --force to re-insert
+  npm run seed:export                 # only needed if data.js changed
+  flask --app backend seed            # idempotent; --force re-inserts
   ```
 
 - **Uploads** go to `instance/media/{images,videos,papers,books}` with random
-  file names and extension allow-lists. The maximum upload size is 50 MB
-  (`MAX_UPLOAD_MB`). Replaced files are deleted; deleting an item also removes
-  its local media.
+  file names and extension allow-lists. The limit is 50 MB (`MAX_UPLOAD_MB`).
+  Replaced files are deleted; deleting an item also removes its local media.
 
 ### API
+
+Public reads need no auth. Writes require `Authorization: Bearer <token>` from
+`POST /api/auth/login`.
 
 | Method | Route | Auth | Purpose |
 | --- | --- | --- | --- |
 | GET | `/api/health` | – | Status, database check, admin configuration |
 | GET | `/api/{projects,papers,books}` | – | List items, ordered by `sort_order` |
-| POST | `/api/{projects,papers,books}` | admin | Create an item |
-| PATCH | `/api/{projects,papers,books}/<id>` | admin | Update fields |
-| DELETE | `/api/{projects,papers,books}/<id>` | admin | Delete an item and its media |
-| POST | `/api/media` | admin | Multipart upload (`file`, `folder`) → `{ url }` |
-| DELETE | `/api/media` | admin | `{ url }` → removes a local upload |
+| POST | `/api/{projects,papers,books}` | token | Create an item |
+| PATCH | `/api/{projects,papers,books}/<id>` | token | Update fields |
+| DELETE | `/api/{projects,papers,books}/<id>` | token | Delete an item and its media |
+| POST | `/api/media` | token | Multipart upload (`file`, `folder`) → `{ url }` |
+| DELETE | `/api/media` | token | `{ url }` → removes a local upload |
 | GET | `/media/<path>` | – | Serve uploaded files |
-| GET/POST | `/api/auth/session`, `/api/auth/login`, `/api/auth/logout` | – | Admin session |
+| GET | `/api/auth/session` | – | `{ authenticated, configured }` for the current token |
+| POST | `/api/auth/login` | – | `{ password }` → `{ token }` |
+| POST | `/api/auth/logout` | – | Acknowledges sign-out (client drops the token) |
+
+CORS preflight (`OPTIONS`) is answered automatically for allowed origins.
 
 ## Admin login
 
@@ -109,57 +112,45 @@ flask --app backend hash-password
 ```
 
 Put the printed value in `.env` as `ADMIN_PASSWORD_HASH` (single quotes are
-safest), restart the app, then sign in at `/admin`. To change the password,
-generate a new hash and replace the old one. If `ADMIN_PASSWORD_HASH` is empty,
-`/admin` shows a setup message and login returns 503.
+safest) and restart the backend. Sign in at `/admin`; the returned token is kept
+in the browser's `localStorage` for 12 hours (`ADMIN_TOKEN_MAX_AGE`). Logging out
+discards it. Changing `SECRET_KEY` invalidates all existing tokens.
 
-Login attempts are throttled (5 failures per IP per 10 minutes), sessions last 12
-hours, and state-changing requests from another origin are rejected.
+If `ADMIN_PASSWORD_HASH` is empty, `/admin` shows a setup message and login
+returns 503. Failed attempts are throttled (5 per IP per 10 minutes).
 
-## Deploying to PythonAnywhere
+## Media
 
-The whole site runs as one PythonAnywhere web app: Flask serves the API, the
-uploaded media, and the built React files.
+- `PUBLIC_BASE_URL` must be the public origin of the API on PythonAnywhere, e.g.
+  `https://yourusername.pythonanywhere.com` (no trailing slash). Uploads then
+  return `https://yourusername.pythonanywhere.com/media/…`.
+- Seed images use paths like `/projects/aqmrg.png`, which resolve against the
+  **Vercel** site (they live in `public/`), not the API.
+- To serve uploads directly from PythonAnywhere instead of through Flask, map
+  `/media/` → `/home/USERNAME/Portfolio/instance/media` under **Web → Static
+  files**. The URLs stay the same.
 
-### 1. Build the frontend locally
+## Deploying the backend on PythonAnywhere
 
-```bash
-npm install
-npm run build        # writes dist/
-```
-
-`dist/` is gitignored, so a plain `git clone` on PythonAnywhere will not include
-it. Either:
-
-- zip `dist/` locally and upload it through the **Files** tab, then unzip it in
-  the project root (it must sit next to `backend/`), or
-- build on the server (`npm ci && npm run build`) — Node is available in the
-  PythonAnywhere consoles, at the cost of extra disk usage.
-
-### 2. Upload the project
-
-Use a Bash console (`git clone` if the repo is on GitHub) or upload a zip; the
-folder must end up somewhere like `/home/USERNAME/portfolio` and contain:
-
-```
-backend/  dist/  deploy/  public/  src/  package.json  vite.config.js
-```
-
-Do **not** upload `node_modules/`, `.venv/`, `instance/`, or `.env`
-(`.env` is created in the next step).
-
-### 3. Install the backend
-
-In a Bash console on PythonAnywhere:
+### 1. Upload the project
 
 ```bash
-cd ~/portfolio
-python3.10 -m venv .venv            # or any Python 3.10+ available in the Web tab
-source .venv/bin/activate
+cd ~
+git clone https://github.com/alxLenno/Portfolio.git Portfolio
+```
+
+Only the backend is needed on the server; `dist/` and `node_modules/` are not
+required.
+
+### 2. Install the backend
+
+```bash
+cd ~/Portfolio
+mkvirtualenv venv --python=/usr/bin/python3.10   # or: python3 -m venv venv
 pip install -r backend/requirements.txt
 ```
 
-### 4. Configure `.env`
+### 3. Configure `.env`
 
 ```bash
 cp .env.example .env
@@ -171,7 +162,9 @@ nano .env
 ```bash
 SECRET_KEY=…
 ADMIN_PASSWORD_HASH='pbkdf2:sha256:600000$…'
-SESSION_COOKIE_SECURE=1
+PUBLIC_BASE_URL=https://yourusername.pythonanywhere.com
+# Add your custom domain if the Vercel site does not use *.vercel.app:
+# ALLOWED_ORIGINS=https://your-site.vercel.app,https://yourdomain.com
 ```
 
 Then create the database and load the starter content:
@@ -181,87 +174,96 @@ flask --app backend init-db
 flask --app backend seed
 ```
 
-Both commands create `instance/` and `instance/media/` on first use.
-
-### 5. Create the web app
+### 4. Create the web app
 
 In the **Web** tab:
 
-- **Add a new web app** → **Manual configuration** → the Python version you used
-  for the virtualenv (3.10+).
-- **Source code**: `/home/USERNAME/portfolio`
-- **Working directory**: `/home/USERNAME/portfolio`
-- **Virtualenv**: `/home/USERNAME/portfolio/.venv`
+- **Add a new web app** → **Manual configuration** → the Python version used for
+  the virtualenv.
+- **Source code**: `/home/USERNAME/Portfolio`
+- **Working directory**: `/home/USERNAME/Portfolio`
+- **Virtualenv**: `/home/USERNAME/.virtualenvs/venv` (or
+  `/home/USERNAME/Portfolio/venv` if you used `python3 -m venv`)
 - **WSGI configuration file**: replace its contents with
-  [`deploy/pythonanywhere_wsgi.py`](deploy/pythonanywhere_wsgi.py) and set
-  `PROJECT_DIR` to your actual path.
-- *(Optional, faster)* **Static files**:
-  - URL `/media/` → `/home/USERNAME/portfolio/instance/media`
-  - URL `/assets/` → `/home/USERNAME/portfolio/dist/assets`
+  [`deploy/pythonanywhere_wsgi.py`](deploy/pythonanywhere_wsgi.py), keeping
+  `PROJECT_DIR = '/home/USERNAME/Portfolio'` with your actual username.
+- **Security → Force HTTPS**: *Enabled*.
 
-  PythonAnywhere then serves these files directly instead of through Flask.
-  URLs and caching stay the same.
+Reload, then check `https://USERNAME.pythonanywhere.com/api/health` — it should
+return `{"status": "ok", …}`. The root URL returns a small JSON index instead of
+the website, which is expected: the site lives on Vercel.
 
-- **Security → Force HTTPS**: set it to *Enabled* so the session cookie is only
-  ever sent over TLS.
-
-Reload the web app and check:
-
-- `https://USERNAME.pythonanywhere.com/api/health` → `{"status": "ok", …}`
-- `https://USERNAME.pythonanywhere.com/` → the portfolio
-- `https://USERNAME.pythonanywhere.com/admin` → the sign-in form
-
-### 6. Updating the deployment
+### 5. Updating the backend
 
 ```bash
-cd ~/portfolio && git pull          # or re-upload changed files
-source .venv/bin/activate
+cd ~/Portfolio && git pull
 pip install -r backend/requirements.txt   # only if dependencies changed
 ```
 
-Upload a freshly built `dist/` when the frontend changed, then press **Reload**
-in the Web tab. Database schema changes are applied automatically on startup
-(`backend/schema.sql` is idempotent); for a manual run use
-`flask --app backend init-db`.
+Then press **Reload** in the Web tab. Schema changes are idempotent and applied
+on startup.
+
+## Deploying the frontend on Vercel
+
+The project is already connected to Vercel; the frontend needs to know where the
+API lives. In **Vercel → Project → Settings → Environment Variables**, add for
+Production (and Preview):
+
+```bash
+VITE_API_BASE_URL=https://yourusername.pythonanywhere.com
+```
+
+Remove the old `VITE_SUPABASE_*` variables if they are still there, then
+redeploy — Vite bakes env vars in at build time, so a rebuild is required.
+
+After that:
+
+- Site: `https://your-project.vercel.app`
+- Admin: `https://your-project.vercel.app/admin`
+
+`vercel.json` keeps the SPA rewrite so deep links (including `/admin`) work.
+
+If you attach a custom domain, add it to `ALLOWED_ORIGINS` on PythonAnywhere and
+reload the backend.
 
 ## Backups
 
-Everything that changes lives under `instance/`:
+Everything that changes lives under `instance/` on PythonAnywhere:
 
-- `instance/portfolio.db` — download this file to back up all content
+- `instance/portfolio.db` — all content
 - `instance/media/` — uploaded images, videos, PDFs, and book covers
 
-For a consistent database copy, use PythonAnywhere's file browser or:
-
 ```bash
-sqlite3 ~/portfolio/instance/portfolio.db ".backup ~/portfolio-backup.db"
+sqlite3 ~/Portfolio/instance/portfolio.db ".backup ~/portfolio-backup.db"
 ```
 
-Keep in mind the free-tier disk quota (512 MB) if you upload large videos.
+Keep the free-tier disk quota (512 MB) in mind for video uploads.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
-| `503` "frontend has not been built" | Run `npm run build` and upload `dist/` |
-| `/admin` says "Admin not configured" | `ADMIN_PASSWORD_HASH` missing or empty in `.env`; restart the app |
-| `/admin` says "Admin unavailable" | Flask isn't running/reachable; check `npm run dev:api` or the PA error log |
-| Login succeeds but you're signed out immediately | On plain HTTP set `SESSION_COOKIE_SECURE=0`; on HTTPS keep it `1` |
-| `403` on save/upload | The browser's `Origin` doesn't match the server host (proxy or renamed domain) |
-| `/api/health` shows `"database": "error"` | `instance/` isn't writable or the DB file is locked; check permissions/logs |
+| Browser console CORS error | Add the exact frontend origin to `ALLOWED_ORIGINS` and reload |
+| `401` on admin saves | Token expired (12 h) or `SECRET_KEY` changed — sign in again |
+| `/admin` says "Admin not configured" | `ADMIN_PASSWORD_HASH` missing/empty; restart the backend |
+| `/admin` says "Admin unavailable" | API unreachable; check `VITE_API_BASE_URL` and the PA error log |
+| Uploaded images 404 on Vercel | Set `PUBLIC_BASE_URL` and restart the backend |
+| `413` on upload | File is over `MAX_UPLOAD_MB` (default 50) |
+| Login works but requests fail | Vercel env var added without redeploying |
+| `/api/health` shows `"database": "error"` | `instance/` not writable or DB locked |
 
 ## Project structure
 
 ```
 backend/
-  __init__.py              app factory: config, security headers, SPA serving
+  __init__.py              app factory: config, CORS, security headers
   api.py                   CRUD routes, media upload/delete, /media serving
-  auth.py                  password login, session guard, throttling
+  auth.py                  password login, signed bearer tokens, throttling
   db.py                    SQLite connection helpers
   schema.sql               tables and indexes (idempotent)
   seed.py / seed.json      starter content importer + exported seed data
   cli.py                   init-db, seed, hash-password commands
-  tests/                   pytest suite for the API, auth, media, and SPA
+  tests/                   pytest suite for the API, auth, CORS, media
 deploy/
   pythonanywhere_wsgi.py   WSGI entry point for PythonAnywhere
 scripts/

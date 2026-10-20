@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from flask import current_app
 
@@ -19,6 +20,12 @@ FOLDER_EXTENSIONS = {
 
 def media_root():
     return Path(current_app.config['MEDIA_ROOT'])
+
+
+def public_media_url(relative_path):
+    """Absolute URL when PUBLIC_BASE_URL is set, so the Vercel frontend can load it."""
+    base = (current_app.config.get('PUBLIC_BASE_URL') or '').rstrip('/')
+    return f'{base}{MEDIA_URL_PREFIX}{relative_path}'
 
 
 def extension_of(filename):
@@ -43,15 +50,28 @@ def save_upload(file_storage, folder):
     filename = f'{uuid.uuid4().hex}.{extension}'
     file_storage.save(destination / filename)
 
-    return f'{MEDIA_URL_PREFIX}{folder}/{filename}'
+    return public_media_url(f'{folder}/{filename}')
+
+
+def relative_media_path(url):
+    """Return the path under the media root for a /media/... URL, else None."""
+    if not isinstance(url, str) or not url.strip():
+        return None
+
+    path = urlsplit(url).path
+    if not path.startswith(MEDIA_URL_PREFIX):
+        return None
+
+    relative = path[len(MEDIA_URL_PREFIX):]
+    return relative or None
 
 
 def delete_media(url):
     """Delete a file stored under the media root. Returns True when removed."""
-    if not isinstance(url, str) or not url.startswith(MEDIA_URL_PREFIX):
+    relative = relative_media_path(url)
+    if relative is None:
         return False
 
-    relative = url[len(MEDIA_URL_PREFIX):].split('?', 1)[0].split('#', 1)[0]
     root = media_root().resolve()
     target = (root / relative).resolve()
 

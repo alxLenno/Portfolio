@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api } from '../lib/api'
+import { api, setAdminToken } from '../lib/api'
 import AdminLogin from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
 import './admin.css'
@@ -10,7 +10,9 @@ export default function Admin() {
 
   const refreshSession = useCallback(async () => {
     try {
-      setSession(await api.auth.session())
+      const nextSession = await api.auth.session()
+      if (!nextSession.authenticated) setAdminToken(null)
+      setSession(nextSession)
       setError(null)
     } catch (err) {
       setSession({ authenticated: false, configured: false })

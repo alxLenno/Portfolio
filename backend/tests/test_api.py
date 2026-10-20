@@ -1,10 +1,14 @@
-"""API, media, and single-page-app serving behaviour."""
+"""API, media, and frontend-serving behaviour."""
 
 import io
+from urllib.parse import urlsplit
 
 import pytest
 
+from .conftest import ALLOWED_ORIGIN
+
 PNG_BYTES = b'\x89PNG\r\n\x1a\n' + b'\x00' * 32
+PUBLIC_BASE = 'https://api.example.test'
 
 
 def upload(client, folder='images', filename='shot.png', content=PNG_BYTES):
@@ -33,6 +37,16 @@ def test_collections_start_empty(client, resource):
 
 def test_writes_require_authentication(client):
     response = client.post('/api/projects', json={'name': 'x', 'description': 'y'})
+
+    assert response.status_code == 401
+
+
+def test_an_invalid_token_is_rejected(client):
+    response = client.post(
+        '/api/projects',
+        json={'name': 'x', 'description': 'y'},
+        headers={'Authorization': 'Bearer nope'},
+    )
 
     assert response.status_code == 401
 
@@ -139,21 +153,26 @@ def test_papers_and_books_crud(admin, resource, payload):
     assert admin.get(f'/api/{resource}').get_json() == []
 
 
-def test_media_upload_serve_and_delete(admin):
+def test_media_upload_returns_an_absolute_url(admin):
     response = upload(admin)
     assert response.status_code == 201
 
     url = response.get_json()['url']
-    assert url.startswith('/media/images/')
+    assert url.startswith(f'{PUBLIC_BASE}/media/images/')
+    assert url.endswith('.png')
 
-    served = admin.get(url)
+    served = admin.get(urlsplit(url).path)
     assert served.status_code == 200
     assert served.data == PNG_BYTES
     assert 'immutable' in served.headers['Cache-Control']
 
+
+def test_media_can_be_deleted_using_its_absolute_url(admin):
+    url = upload(admin).get_json()['url']
+
     deleted = admin.delete('/api/media', json={'url': url})
     assert deleted.get_json() == {'deleted': True}
-    assert admin.get(url).status_code == 404
+    assert admin.get(urlsplit(url).path).status_code == 404
 
 
 def test_media_upload_requires_authentication(client):
@@ -185,10 +204,31 @@ def test_deleting_a_project_removes_its_uploaded_media(admin):
     ).get_json()
 
     assert admin.delete(f"/api/projects/{project['id']}").status_code == 204
-    assert admin.get(url).status_code == 404
+    assert admin.get(urlsplit(url).path).status_code == 404
 
 
-def test_spa_fallback_serves_index(client):
+def test_allowed_origin_can_write(admin):
+    response = admin.post(
+        '/api/projects',
+        json={'name': 'From Vercel', 'description': 'Cross-origin write'},
+        headers={'Origin': ALLOWED_ORIGIN},
+    )
+
+    assert response.status_code == 201
+    assert response.headers['Access-Control-Allow-Origin'] == ALLOWED_ORIGIN
+
+
+def test_cross_origin_writes_are_rejected(admin):
+    response = admin.post(
+        '/api/projects',
+        json={'name': 'x', 'description': 'y'},
+        headers={'Origin': 'https://evil.example'},
+    )
+
+    assert response.status_code == 403
+
+
+def test_local_build_is_served_when_present(client):
     for path in ('/', '/about', '/admin'):
         response = client.get(path)
         assert response.status_code == 200
@@ -204,6 +244,18 @@ def test_hashed_assets_are_served(client):
     assert 'max-age=31536000' in response.headers['Cache-Control']
 
 
+def test_api_only_deployment_returns_a_json_index(app, client, tmp_path):
+    app.config['SPA_DIST'] = str(tmp_path / 'not-built')
+
+    root = client.get('/')
+    assert root.status_code == 200
+    assert root.get_json()['service'] == 'portfolio-api'
+
+    page = client.get('/about')
+    assert page.status_code == 404
+    assert 'hosted separately' in page.get_json()['error']
+
+
 def test_unknown_api_and_media_paths_are_json_404(client):
     api_response = client.get('/api/unknown')
     assert api_response.status_code == 404
@@ -212,25 +264,6 @@ def test_unknown_api_and_media_paths_are_json_404(client):
     media_response = client.get('/media/missing.png')
     assert media_response.status_code == 404
     assert media_response.is_json
-
-
-def test_cross_origin_writes_are_rejected(admin):
-    response = admin.post(
-        '/api/projects',
-        json={'name': 'x', 'description': 'y'},
-        headers={'Origin': 'https://evil.example'},
-    )
-
-    assert response.status_code == 403
-
-
-def test_missing_frontend_build_is_reported(app, client, tmp_path):
-    app.config['SPA_DIST'] = str(tmp_path / 'not-built')
-
-    response = client.get('/')
-
-    assert response.status_code == 503
-    assert 'npm run build' in response.get_json()['error']
 
 
 def test_seed_is_idempotent(app, client):

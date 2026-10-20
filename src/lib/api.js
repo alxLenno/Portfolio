@@ -1,5 +1,26 @@
-// Thin client for the Flask API. Requests are always same-origin: Flask serves
-// both this SPA and /api in production, and Vite proxies /api during dev.
+// Thin client for the Flask API. On Vercel, VITE_API_BASE_URL points at the
+// PythonAnywhere backend; during local dev it is empty and Vite proxies /api
+// and /media to Flask. Auth uses a bearer token because the API is cross-origin.
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
+const TOKEN_KEY = 'portfolio-admin-token'
+
+export function getAdminToken() {
+  try {
+    return window.localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setAdminToken(token) {
+  try {
+    if (token) window.localStorage.setItem(TOKEN_KEY, token)
+    else window.localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    // Storage can be unavailable (private mode); login still works for the tab.
+  }
+}
 
 export class ApiError extends Error {
   constructor(message, status, data) {
@@ -12,7 +33,10 @@ export class ApiError extends Error {
 
 export async function request(path, { method = 'GET', body, signal } = {}) {
   const headers = { Accept: 'application/json' }
-  const options = { method, credentials: 'include', headers, signal }
+  const token = getAdminToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const options = { method, headers, signal }
 
   if (body instanceof FormData) {
     options.body = body
@@ -23,7 +47,7 @@ export async function request(path, { method = 'GET', body, signal } = {}) {
 
   let response
   try {
-    response = await fetch(path, options)
+    response = await fetch(`${API_BASE}${path}`, options)
   } catch (error) {
     if (error.name === 'AbortError') throw error
     throw new ApiError(
@@ -46,6 +70,8 @@ export async function request(path, { method = 'GET', body, signal } = {}) {
   }
 
   if (!response.ok) {
+    if (response.status === 401 && path !== '/api/auth/login') setAdminToken(null)
+
     const message =
       (data && typeof data === 'object' && data.error) ||
       (typeof data === 'string' && data) ||
@@ -70,8 +96,21 @@ function resource(path) {
 export const api = {
   auth: {
     session: () => request('/api/auth/session'),
-    login: (password) => request('/api/auth/login', { method: 'POST', body: { password } }),
-    logout: () => request('/api/auth/logout', { method: 'POST' }),
+    async login(password) {
+      const data = await request('/api/auth/login', {
+        method: 'POST',
+        body: { password },
+      })
+      if (data?.token) setAdminToken(data.token)
+      return data
+    },
+    async logout() {
+      try {
+        await request('/api/auth/logout', { method: 'POST' })
+      } finally {
+        setAdminToken(null)
+      }
+    },
   },
   projects: resource('/api/projects'),
   papers: resource('/api/papers'),
