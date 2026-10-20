@@ -1,48 +1,39 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { api } from '../lib/api'
 
-export default function AdminLogin() {
-  const [email, setEmail] = useState('')
+export default function AdminLogin({ onSignedIn }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault()
     setSubmitting(true)
     setError(null)
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-
-    setSubmitting(false)
-    if (signInError) setError(signInError.message)
+    try {
+      await api.auth.login(password)
+      setPassword('')
+      onSignedIn()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="admin-card admin-card--narrow">
       <h1>Admin sign in</h1>
-      <p className="admin-hint">
-        Sign in with the admin account created in your Supabase project&rsquo;s Authentication
-        settings.
-      </p>
+      <p className="admin-hint">Enter the admin password configured for this site.</p>
       <form onSubmit={handleSubmit} className="admin-form">
-        <label>
-          Email
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="username"
-          />
-        </label>
         <label>
           Password
           <input
             type="password"
             required
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
           />
         </label>

@@ -1,34 +1,52 @@
 import { useState } from 'react'
-import { supabase, BOOKS_TABLE } from '../lib/supabaseClient'
+import { api } from '../lib/api'
 import { useBooks } from '../hooks/useBooks'
 import BookForm from './BookForm'
 
 export default function AdminBooks() {
-  const { books, loading } = useBooks()
+  const { books, loading, refetch } = useBooks()
   const [editingId, setEditingId] = useState(null)
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [error, setError] = useState(null)
 
   async function handleDelete(book) {
     if (!confirm(`Delete "${book.title}"? This can't be undone.`)) return
+
     setDeletingId(book.id)
-    await supabase.from(BOOKS_TABLE).delete().eq('id', book.id)
-    setDeletingId(null)
+    setError(null)
+
+    try {
+      await api.books.remove(book.id)
+      await refetch()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  async function handleSaved() {
+    await refetch()
+    setAdding(false)
+    setEditingId(null)
   }
 
   return (
     <div>
       <div className="admin-dashboard__header">
-        <p className="admin-hint">Changes go live on the portfolio immediately.</p>
+        <p className="admin-hint">Changes appear on the portfolio within a minute.</p>
         <button className="btn btn--primary" onClick={() => setAdding((v) => !v)}>
           {adding ? 'Close' : 'Add book'}
         </button>
       </div>
 
+      {error && <p className="admin-error">{error}</p>}
+
       {adding && (
         <div className="admin-card">
           <h2>New book</h2>
-          <BookForm onSaved={() => setAdding(false)} onCancel={() => setAdding(false)} />
+          <BookForm onSaved={handleSaved} onCancel={() => setAdding(false)} />
         </div>
       )}
 
@@ -42,7 +60,7 @@ export default function AdminBooks() {
                 <h2>Edit book</h2>
                 <BookForm
                   book={b}
-                  onSaved={() => setEditingId(null)}
+                  onSaved={handleSaved}
                   onCancel={() => setEditingId(null)}
                 />
               </div>

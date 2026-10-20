@@ -1,47 +1,11 @@
-import { useEffect, useState } from 'react'
-import { isSupabaseConfigured, supabase, PAPERS_TABLE } from '../lib/supabaseClient'
+import { useCallback } from 'react'
+import { api } from '../lib/api'
 import { fallbackPapers } from '../data'
+import { useCollection } from './useCollection'
 
 export function useResearch() {
-  const [papers, setPapers] = useState(isSupabaseConfigured ? null : fallbackPapers)
-  const [error, setError] = useState(null)
+  const load = useCallback(() => api.papers.list(), [])
+  const { items, loading, error, refetch } = useCollection(load, fallbackPapers)
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) return
-
-    let cancelled = false
-
-    async function load() {
-      try {
-        const { data, error: fetchError } = await supabase
-          .from(PAPERS_TABLE)
-          .select('*')
-          .order('sort_order', { ascending: true })
-
-        if (cancelled) return
-
-        if (fetchError) throw fetchError
-
-        setPapers(data)
-      } catch (err) {
-        if (cancelled) return
-        setError(err.message)
-        setPapers(fallbackPapers)
-      }
-    }
-
-    load()
-
-    const channel = supabase
-      .channel('research-papers-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: PAPERS_TABLE }, load)
-      .subscribe()
-
-    return () => {
-      cancelled = true
-      supabase.removeChannel(channel)
-    }
-  }, [])
-
-  return { papers: papers ?? [], loading: papers === null, error }
+  return { papers: items, loading, error, refetch }
 }

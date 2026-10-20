@@ -1,47 +1,11 @@
-import { useEffect, useState } from 'react'
-import { isSupabaseConfigured, supabase, BOOKS_TABLE } from '../lib/supabaseClient'
+import { useCallback } from 'react'
+import { api } from '../lib/api'
 import { fallbackBooks } from '../data'
+import { useCollection } from './useCollection'
 
 export function useBooks() {
-  const [books, setBooks] = useState(isSupabaseConfigured ? null : fallbackBooks)
-  const [error, setError] = useState(null)
+  const load = useCallback(() => api.books.list(), [])
+  const { items, loading, error, refetch } = useCollection(load, fallbackBooks)
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) return
-
-    let cancelled = false
-
-    async function load() {
-      try {
-        const { data, error: fetchError } = await supabase
-          .from(BOOKS_TABLE)
-          .select('*')
-          .order('sort_order', { ascending: true })
-
-        if (cancelled) return
-
-        if (fetchError) throw fetchError
-
-        setBooks(data)
-      } catch (err) {
-        if (cancelled) return
-        setError(err.message)
-        setBooks(fallbackBooks)
-      }
-    }
-
-    load()
-
-    const channel = supabase
-      .channel('books-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: BOOKS_TABLE }, load)
-      .subscribe()
-
-    return () => {
-      cancelled = true
-      supabase.removeChannel(channel)
-    }
-  }, [])
-
-  return { books: books ?? [], loading: books === null, error }
+  return { books: items, loading, error, refetch }
 }

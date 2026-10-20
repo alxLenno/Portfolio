@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
 import AdminProjects from './AdminProjects'
 import AdminPapers from './AdminPapers'
 import AdminBooks from './AdminBooks'
@@ -10,7 +9,7 @@ const tabs = [
   { id: 'books', label: 'Books', Component: AdminBooks },
 ]
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ onSignOut }) {
   const [tab, setTab] = useState('projects')
   const ActiveTab = tabs.find((t) => t.id === tab).Component
 
@@ -18,7 +17,7 @@ export default function AdminDashboard() {
     <div className="admin-dashboard">
       <div className="admin-dashboard__top">
         <h1>Admin</h1>
-        <button className="btn btn--ghost" onClick={() => supabase.auth.signOut()}>
+        <button className="btn btn--ghost" onClick={onSignOut}>
           Sign out
         </button>
       </div>

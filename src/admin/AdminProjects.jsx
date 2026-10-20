@@ -1,34 +1,52 @@
 import { useState } from 'react'
-import { supabase, PROJECTS_TABLE } from '../lib/supabaseClient'
+import { api } from '../lib/api'
 import { useProjects } from '../hooks/useProjects'
 import ProjectForm from './ProjectForm'
 
 export default function AdminProjects() {
-  const { projects, loading } = useProjects()
+  const { projects, loading, refetch } = useProjects()
   const [editingId, setEditingId] = useState(null)
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [error, setError] = useState(null)
 
   async function handleDelete(project) {
     if (!confirm(`Delete "${project.name}"? This can't be undone.`)) return
+
     setDeletingId(project.id)
-    await supabase.from(PROJECTS_TABLE).delete().eq('id', project.id)
-    setDeletingId(null)
+    setError(null)
+
+    try {
+      await api.projects.remove(project.id)
+      await refetch()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  async function handleSaved() {
+    await refetch()
+    setAdding(false)
+    setEditingId(null)
   }
 
   return (
     <div>
       <div className="admin-dashboard__header">
-        <p className="admin-hint">Changes go live on the portfolio immediately.</p>
+        <p className="admin-hint">Changes appear on the portfolio within a minute.</p>
         <button className="btn btn--primary" onClick={() => setAdding((v) => !v)}>
           {adding ? 'Close' : 'Add project'}
         </button>
       </div>
 
+      {error && <p className="admin-error">{error}</p>}
+
       {adding && (
         <div className="admin-card">
           <h2>New project</h2>
-          <ProjectForm onSaved={() => setAdding(false)} onCancel={() => setAdding(false)} />
+          <ProjectForm onSaved={handleSaved} onCancel={() => setAdding(false)} />
         </div>
       )}
 
@@ -42,7 +60,7 @@ export default function AdminProjects() {
                 <h2>Edit project</h2>
                 <ProjectForm
                   project={p}
-                  onSaved={() => setEditingId(null)}
+                  onSaved={handleSaved}
                   onCancel={() => setEditingId(null)}
                 />
               </div>

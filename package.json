@@ -5,15 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "flask --app backend run --port 5001 --debug",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "seed": "node scripts/seed.mjs"
+    "seed:export": "node scripts/export-seed.mjs",
+    "test:api": "pytest backend/tests"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

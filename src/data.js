@@ -52,8 +52,8 @@ export const experience = [
   },
 ]
 
-// Used until Supabase is configured (see src/lib/supabaseClient.js), and as
-// the seed data loaded into the projects table by scripts/seed.mjs.
+// Bundled fallback for the projects page when the Flask API is unreachable,
+// and the source for backend/seed.json (see scripts/export-seed.mjs).
 export const fallbackProjects = [
   {
     name: 'AQMRG — Air Quality Monitoring System',
@@ -176,8 +176,7 @@ export const certifications = [
   },
 ]
 
-// Used until Supabase is configured, and as the seed data loaded into the
-// research_papers table by scripts/seed.mjs.
+// Bundled fallback for the research page, and the source for backend/seed.json.
 export const fallbackPapers = [
   {
     title:
@@ -194,8 +193,7 @@ export const fallbackPapers = [
   },
 ]
 
-// Used until Supabase is configured, and as the seed data loaded into the
-// books table by scripts/seed.mjs.
+// Bundled fallback for the books page, and the source for backend/seed.json.
 export const fallbackBooks = []
 
 export const leadership = {

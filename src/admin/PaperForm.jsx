@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, uploadMedia, PAPERS_TABLE } from '../lib/supabaseClient'
+import { api } from '../lib/api'
 
 const emptyForm = {
   title: '',
@@ -55,13 +55,17 @@ export default function PaperForm({ paper, onSaved, onCancel }) {
         sort_order: Number(form.sort_order) || 0,
       }
 
-      if (file) payload.paper_url = await uploadMedia(file, 'papers')
+      if (file) payload.paper_url = (await api.media.upload(file, 'papers')).url
 
-      const { error: saveError } = isEdit
-        ? await supabase.from(PAPERS_TABLE).update(payload).eq('id', paper.id)
-        : await supabase.from(PAPERS_TABLE).insert(payload)
+      if (isEdit) {
+        await api.papers.update(paper.id, payload)
+      } else {
+        await api.papers.create(payload)
+      }
 
-      if (saveError) throw saveError
+      if (isEdit && file && paper.paper_url) {
+        await api.media.remove(paper.paper_url).catch(() => {})
+      }
 
       onSaved()
     } catch (err) {

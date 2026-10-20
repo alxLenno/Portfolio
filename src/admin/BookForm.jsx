@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, uploadMedia, BOOKS_TABLE } from '../lib/supabaseClient'
+import { api } from '../lib/api'
 
 const emptyForm = {
   title: '',
@@ -52,13 +52,17 @@ export default function BookForm({ book, onSaved, onCancel }) {
         sort_order: Number(form.sort_order) || 0,
       }
 
-      if (coverFile) payload.cover_url = await uploadMedia(coverFile, 'books')
+      if (coverFile) payload.cover_url = (await api.media.upload(coverFile, 'books')).url
 
-      const { error: saveError } = isEdit
-        ? await supabase.from(BOOKS_TABLE).update(payload).eq('id', book.id)
-        : await supabase.from(BOOKS_TABLE).insert(payload)
+      if (isEdit) {
+        await api.books.update(book.id, payload)
+      } else {
+        await api.books.create(payload)
+      }
 
-      if (saveError) throw saveError
+      if (isEdit && coverFile && book.cover_url) {
+        await api.media.remove(book.cover_url).catch(() => {})
+      }
 
       onSaved()
     } catch (err) {

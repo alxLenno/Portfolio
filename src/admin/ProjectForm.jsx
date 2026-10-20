@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, uploadMedia, PROJECTS_TABLE } from '../lib/supabaseClient'
+import { api } from '../lib/api'
 
 const emptyForm = {
   name: '',
@@ -26,6 +26,8 @@ export default function ProjectForm({ project, onSaved, onCancel }) {
   const [form, setForm] = useState(() => toFormState(project))
   const [imageFile, setImageFile] = useState(null)
   const [videoFile, setVideoFile] = useState(null)
+  const [removedMedia, setRemovedMedia] = useState({ image: false, video: false })
+  const [removingMedia, setRemovingMedia] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -33,6 +35,34 @@ export default function ProjectForm({ project, onSaved, onCancel }) {
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
+  }
+
+  async function handleRemoveMedia(type) {
+    const isImage = type === 'image'
+    const url = isImage ? project.image_url : project.video_url
+    const column = isImage ? 'image_url' : 'video_url'
+    const label = isImage ? 'cover image' : 'video'
+
+    if (!url || !confirm(`Remove this ${label}? This can't be undone.`)) return
+
+    setRemovingMedia(type)
+    setError(null)
+
+    try {
+      await api.projects.update(project.id, { [column]: null })
+
+      setRemovedMedia((current) => ({ ...current, [type]: true }))
+
+      try {
+        await api.media.remove(url)
+      } catch (storageError) {
+        setError(`The ${label} was removed from the project, but file cleanup failed: ${storageError.message}`)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setRemovingMedia(null)
+    }
   }
 
   async function handleSubmit(e) {
@@ -53,14 +83,23 @@ export default function ProjectForm({ project, onSaved, onCancel }) {
         sort_order: Number(form.sort_order) || 0,
       }
 
-      if (imageFile) payload.image_url = await uploadMedia(imageFile, 'images')
-      if (videoFile) payload.video_url = await uploadMedia(videoFile, 'videos')
+      if (imageFile) payload.image_url = (await api.media.upload(imageFile, 'images')).url
+      if (videoFile) payload.video_url = (await api.media.upload(videoFile, 'videos')).url
 
-      const { error: saveError } = isEdit
-        ? await supabase.from(PROJECTS_TABLE).update(payload).eq('id', project.id)
-        : await supabase.from(PROJECTS_TABLE).insert(payload)
+      if (isEdit) {
+        await api.projects.update(project.id, payload)
+      } else {
+        await api.projects.create(payload)
+      }
 
-      if (saveError) throw saveError
+      if (isEdit) {
+        const replacedUrls = [
+          imageFile && !removedMedia.image ? project.image_url : null,
+          videoFile && !removedMedia.video ? project.video_url : null,
+        ].filter(Boolean)
+
+        await Promise.allSettled(replacedUrls.map((url) => api.media.remove(url)))
+      }
 
       onSaved()
     } catch (err) {
@@ -120,6 +159,50 @@ export default function ProjectForm({ project, onSaved, onCancel }) {
           />
         </label>
       </div>
+
+      {isEdit && (
+        <div className="admin-media-manager">
+          <p className="admin-media-manager__title">Current media</p>
+          {!removedMedia.image && project.image_url && (
+            <div className="admin-media-item">
+              <img src={project.image_url} alt={`${project.name} cover`} />
+              <div>
+                <strong>Cover image</strong>
+                <span>Shown first on the project card</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn--danger"
+                onClick={() => handleRemoveMedia('image')}
+                disabled={saving || removingMedia !== null}
+              >
+                {removingMedia === 'image' ? 'Removing…' : 'Remove image'}
+              </button>
+            </div>
+          )}
+          {!removedMedia.video && project.video_url && (
+            <div className="admin-media-item">
+              <video src={project.video_url} muted preload="metadata" />
+              <div>
+                <strong>Video</strong>
+                <span>{project.image_url && !removedMedia.image ? 'Hidden under More media' : 'Used as the project cover'}</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn--danger"
+                onClick={() => handleRemoveMedia('video')}
+                disabled={saving || removingMedia !== null}
+              >
+                {removingMedia === 'video' ? 'Removing…' : 'Remove video'}
+              </button>
+            </div>
+          )}
+          {(removedMedia.image || !project.image_url) &&
+            (removedMedia.video || !project.video_url) && (
+              <p className="admin-media-manager__empty">No media attached.</p>
+            )}
+        </div>
+      )}
       <label className="admin-form__sort">
         Sort order
         <input

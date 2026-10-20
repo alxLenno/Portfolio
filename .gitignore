@@ -15,6 +15,13 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Flask backend
+.venv
+__pycache__/
+*.pyc
+.pytest_cache/
+instance/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

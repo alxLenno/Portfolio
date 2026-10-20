@@ -1,0 +1,88 @@
+{
+  "projects": [
+    {
+      "name": "AQMRG — Air Quality Monitoring System",
+      "description": "Embedded air-quality monitoring system built around environmental sensors, with a centralized dashboard for real-time data visualization and analysis.",
+      "tech": [
+        "React",
+        "Python",
+        "Embedded Sensors"
+      ],
+      "live_url": "https://aqmrg-frontend.vercel.app/",
+      "github_url": "https://github.com/alxLenno/aqmrg-frontend",
+      "image_url": "/projects/aqmrg.png",
+      "video_url": null,
+      "sort_order": 1
+    },
+    {
+      "name": "Climate-Linked Disease Surveillance IVR",
+      "description": "A mobile app for voice-based public health data collection, supporting English and Yoruba (Yoruba still in development). Collected data is sent to a cloud dashboard via API for processing and analysis. Presented at ACDSA 2026.",
+      "tech": [
+        "Flask",
+        "Mobile App",
+        "REST APIs"
+      ],
+      "live_url": null,
+      "github_url": "https://github.com/alxLenno/IVR_FLASK",
+      "image_url": null,
+      "video_url": null,
+      "sort_order": 2
+    },
+    {
+      "name": "CBR Challenger",
+      "description": "A reading-progress companion that securely backs up study cards to the cloud and syncs them across devices, with Google sign-in for returning users.",
+      "tech": [
+        "JavaScript",
+        "Python",
+        "OAuth"
+      ],
+      "live_url": "https://cbr.pythonanywhere.com/",
+      "github_url": "https://github.com/alxLenno/cbr-challenger-production",
+      "image_url": "/projects/cbr.png",
+      "video_url": null,
+      "sort_order": 3
+    },
+    {
+      "name": "AiNT βeta Yet",
+      "description": "A study & music platform combining audio streaming with scripture study tools — an intelligent notes editor with contextual lookups for verses, definitions, and quick reference.",
+      "tech": [
+        "Python",
+        "JavaScript",
+        "Google Auth"
+      ],
+      "live_url": "https://aityet.pythonanywhere.com/",
+      "github_url": null,
+      "image_url": "/projects/aityet.png",
+      "video_url": null,
+      "sort_order": 4
+    },
+    {
+      "name": "AI Healthcare Assistant Chatbot",
+      "description": "A WhatsApp-based LLM-powered chatbot delivering healthcare guidance in local languages, with a Python Flask backend connected via APIs.",
+      "tech": [
+        "Python",
+        "Flask",
+        "LLMs",
+        "WhatsApp API"
+      ],
+      "live_url": null,
+      "github_url": "https://github.com/LennoxKK/afretec_asr_tts_backend",
+      "image_url": null,
+      "video_url": null,
+      "sort_order": 5
+    }
+  ],
+  "papers": [
+    {
+      "title": "Bridging Climate Change and Public Health: An Inclusive IVR Framework for Disease Surveillance",
+      "venue": "International Conference on Artificial Intelligence, Computer, Data Sciences and Applications (ACDSA 2026), Boracay Island, Philippines",
+      "status": "Published",
+      "date_label": "Feb 2026",
+      "authors": "Segera, Lennox Kahati, Bradley Odimas, Ben Tito",
+      "abstract": "There is an increase in climate change illnesses such as malaria, cholera, and heat-stress in Kenya and Nigeria, yet so many districts encounter problems in data collection such as: relying on paper logs which reach the public-health offices weeks later, time consuming and costly physical visits. We co-designed an Interactive Voice Response (IVR) system (based on English) that works on any smart-feature phone. Using a mixed-method approach informed by the Unified Theory of Acceptance and Use of Technology (UTAUT), we conducted surveys and interviews in Ilaje-Bariga, Lagos. A six-week pilot in North-Central Nigeria (January to April 2025) generated 5660 IVR responses, plus 123 in-person interviews with health workers, patients, and caregivers. Participants were recruited through a purpose-convenience sampling and had to be residents of Ilaje-Bariga aged 18 years and above with healthcare or caregiving experience; those who did not provide consent were excluded. Most (95.1%) had at least secondary education, providing a diverse but locally representative sample of those who can use the english-based version of the IVR. The pilot collected 5,660 clean records. The Task Completion Rate (TCR) was 80.2% and the Not Completing Rate (NCR) 19.8%, with only 691 records needing retries, indicating low errors and latency. A lightweight (native that does not need cloud processing through API (Application Programming Interface) IVR can cut disease-reporting delays from weeks to hours. Next steps include DHIS2 integration and cost-effectiveness testing across Nigerian states.",
+      "paper_url": "https://ieeexplore.ieee.org/document/11467974",
+      "sort_order": 1
+    }
+  ],
+  "books": []
+}
