@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
-import PageTabs from './components/PageTabs'
 import About from './components/About'
 import Experience from './components/Experience'
 import Research from './components/Research'
@@ -50,9 +49,8 @@ function App() {
         <Route
           path="/"
           element={
-            <main className="home-main">
+            <main>
               <Hero />
-              <PageTabs />
             </main>
           }
         />
