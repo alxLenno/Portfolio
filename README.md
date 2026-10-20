@@ -184,9 +184,10 @@ In the **Web** tab:
 - **Working directory**: `/home/USERNAME/Portfolio`
 - **Virtualenv**: `/home/USERNAME/.virtualenvs/venv` (or
   `/home/USERNAME/Portfolio/venv` if you used `python3 -m venv`)
-- **WSGI configuration file**: replace its contents with
-  [`deploy/pythonanywhere_wsgi.py`](deploy/pythonanywhere_wsgi.py), keeping
-  `PROJECT_DIR = '/home/USERNAME/Portfolio'` with your actual username.
+- **WSGI configuration file**: open the file linked there, **delete the sample
+  code** PythonAnywhere puts in it (`from flask_app import app as application`),
+  and replace it with [`deploy/pythonanywhere_wsgi.py`](deploy/pythonanywhere_wsgi.py),
+  setting `PROJECT_DIR = '/home/USERNAME/Portfolio'` to your username. Save it.
 - **Security → Force HTTPS**: *Enabled*.
 
 Reload, then check `https://USERNAME.pythonanywhere.com/api/health` — it should
@@ -243,6 +244,7 @@ Keep the free-tier disk quota (512 MB) in mind for video uploads.
 
 | Symptom | Fix |
 | --- | --- |
+| `ModuleNotFoundError: No module named 'flask_app'` | The WSGI file still contains PythonAnywhere's sample app — replace it with `deploy/pythonanywhere_wsgi.py` |
 | Browser console CORS error | Add the exact frontend origin to `ALLOWED_ORIGINS` and reload |
 | `401` on admin saves | Token expired (12 h) or `SECRET_KEY` changed — sign in again |
 | `/admin` says "Admin not configured" | `ADMIN_PASSWORD_HASH` missing/empty; restart the backend |
