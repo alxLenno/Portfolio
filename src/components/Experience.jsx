@@ -2,16 +2,28 @@ import { experience } from '../data'
 
 export default function Experience() {
   return (
-    <section id="experience" className="section section--alt">
+    <section id="experience" className="section section--alt experience-page">
       <div className="section-inner">
-        <p className="section__eyebrow">Experience</p>
-        <h2 className="section__title">Where I&rsquo;ve worked</h2>
+        <div className="page-heading">
+          <div>
+            <p className="section__eyebrow">Experience</p>
+            <h1 className="section__title">Work that builds forward.</h1>
+            <p className="page-heading__lede">
+              Experience spanning applied research, device quality, and embedded product development.
+            </p>
+          </div>
+          <div className="page-heading__stat">
+            <strong>{String(experience.length).padStart(2, '0')}</strong>
+            <span>Professional roles</span>
+          </div>
+        </div>
 
         <div className="timeline">
-          {experience.map((job) => (
+          {experience.map((job, index) => (
             <article key={job.role + job.org} className="timeline__item">
               <div className="timeline__marker" />
               <div className="timeline__content">
+                <span className="timeline__index">{String(index + 1).padStart(2, '0')}</span>
                 <div className="timeline__head">
                   <h3>{job.role}</h3>
                   <span className="timeline__period">{job.period}</span>

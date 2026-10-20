@@ -8,8 +8,24 @@
       name="description"
       content="Lennox Kahati — Electrical & Electronics Engineer specializing in embedded systems, IoT, and applied AI."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Lennox Kahati — Engineering Portfolio" />
+    <meta property="og:description" content="Explore embedded systems, IoT platforms, applied AI projects, and public health research by Lennox Kahati." />
+    <meta name="twitter:card" content="summary" />
     <meta name="theme-color" content="#150406" />
     <title>Lennox Kahati — Portfolio</title>
+    <script>
+      ;(() => {
+        const savedTheme = localStorage.getItem('portfolio-theme')
+        const systemTheme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        const theme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : systemTheme
+
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === 'dark' ? '#150406' : '#fbf7f3'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

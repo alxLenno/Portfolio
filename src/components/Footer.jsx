@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { profile } from '../data'
 
 export default function Footer() {
@@ -7,7 +8,7 @@ export default function Footer() {
         <p>
           © {new Date().getFullYear()} {profile.name}. Built with React.
         </p>
-        <a href="#top">Back to top ↑</a>
+        <Link to="/">Back home ↑</Link>
       </div>
     </footer>
   )

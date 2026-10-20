@@ -24,6 +24,19 @@
   --radius: 14px;
   --shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.6);
 
+  --body-glow-primary: rgba(122, 22, 37, 0.35);
+  --body-glow-secondary: rgba(212, 175, 55, 0.08);
+  --navbar-bg: rgba(21, 4, 6, 0.85);
+  --hero-glow: rgba(156, 30, 47, 0.45);
+  --section-glow: rgba(212, 175, 55, 0.03);
+  --tag-bg: rgba(212, 175, 55, 0.08);
+  --status-bg: rgba(245, 232, 220, 0.06);
+  --scene-panel: rgba(29, 7, 9, 0.74);
+  --scene-face: rgba(85, 16, 28, 0.68);
+  --scene-line: rgba(232, 205, 122, 0.4);
+  --scene-grid: rgba(232, 205, 122, 0.1);
+  --scene-shadow: rgba(0, 0, 0, 0.55);
+
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   font: 16px/1.6 var(--sans);
@@ -36,6 +49,38 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root[data-theme='light'] {
+  --gold: #98700f;
+  --gold-soft: #765405;
+  --gold-dim: rgba(152, 112, 15, 0.3);
+
+  --bg: #fbf7f3;
+  --surface: #ffffff;
+  --surface-2: #f5ebe7;
+  --border: rgba(85, 16, 28, 0.18);
+  --border-soft: rgba(85, 16, 28, 0.09);
+
+  --text: #241316;
+  --text-dim: #5f484d;
+  --text-mute: #80696e;
+  --shadow: 0 20px 40px -20px rgba(55, 11, 19, 0.24);
+
+  --body-glow-primary: rgba(156, 30, 47, 0.11);
+  --body-glow-secondary: rgba(212, 175, 55, 0.13);
+  --navbar-bg: rgba(251, 247, 243, 0.88);
+  --hero-glow: rgba(156, 30, 47, 0.13);
+  --section-glow: rgba(122, 22, 37, 0.035);
+  --tag-bg: rgba(152, 112, 15, 0.1);
+  --status-bg: rgba(85, 16, 28, 0.05);
+  --scene-panel: rgba(255, 255, 255, 0.76);
+  --scene-face: rgba(122, 22, 37, 0.8);
+  --scene-line: rgba(118, 84, 5, 0.45);
+  --scene-grid: rgba(85, 16, 28, 0.1);
+  --scene-shadow: rgba(55, 11, 19, 0.2);
+
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -44,14 +89,17 @@ html,
 body {
   margin: 0;
   padding: 0;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
   background:
-    radial-gradient(60% 50% at 85% -10%, rgba(122, 22, 37, 0.35), transparent),
-    radial-gradient(40% 40% at 5% 10%, rgba(212, 175, 55, 0.08), transparent),
+    radial-gradient(60% 50% at 85% -10%, var(--body-glow-primary), transparent),
+    radial-gradient(40% 40% at 5% 10%, var(--body-glow-secondary), transparent),
     var(--bg);
   min-height: 100svh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {

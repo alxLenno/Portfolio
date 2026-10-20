@@ -3,17 +3,29 @@ import { BadgeIcon, ExternalLinkIcon } from './icons'
 
 export default function Education() {
   return (
-    <section id="education" className="section">
+    <section id="education" className="section education-page">
       <div className="section-inner">
-        <p className="section__eyebrow">Education & Certifications</p>
-        <h2 className="section__title">Background</h2>
+        <div className="page-heading">
+          <div>
+            <p className="section__eyebrow">Education &amp; credentials</p>
+            <h1 className="section__title">A foundation for what comes next.</h1>
+            <p className="page-heading__lede">
+              Formal engineering education strengthened by ongoing technical learning and competition experience.
+            </p>
+          </div>
+          <div className="page-heading__stat">
+            <strong>{String(certifications.length).padStart(2, '0')}</strong>
+            <span>Certifications</span>
+          </div>
+        </div>
 
         <div className="edu__grid">
-          <div>
+          <div className="edu__column">
             <h3 className="edu__subhead">Education</h3>
             <div className="edu__list">
-              {education.map((e) => (
+              {education.map((e, index) => (
                 <div key={e.degree} className="edu__item">
+                  <span className="edu__item-index">{String(index + 1).padStart(2, '0')}</span>
                   <div className="edu__item-head">
                     <h4>{e.degree}</h4>
                     <span>{e.period}</span>
@@ -27,7 +39,7 @@ export default function Education() {
             </div>
           </div>
 
-          <div>
+          <div className="edu__column">
             <h3 className="edu__subhead">Certifications</h3>
             <div className="cert__list">
               {certifications.map((c) => (

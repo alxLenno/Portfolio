@@ -3,16 +3,28 @@ import { GitHubIcon, LinkedInIcon, MailIcon, PhoneIcon } from './icons'
 
 export default function Contact() {
   return (
-    <section id="contact" className="section section--alt">
+    <section id="contact" className="section section--alt contact-page">
       <div className="section-inner">
-        <p className="section__eyebrow">Contact</p>
-        <h2 className="section__title">Let&rsquo;s work together</h2>
-        <p className="contact__lede">
-          Open to roles and collaborations in embedded systems, IoT, and applied AI. Reach out
-          through any of the channels below.
-        </p>
+        <div className="page-heading">
+          <div>
+            <p className="section__eyebrow">Contact</p>
+            <h1 className="section__title">Let&rsquo;s build something useful.</h1>
+            <p className="page-heading__lede">
+              Open to roles and collaborations in embedded systems, IoT, and applied AI.
+            </p>
+          </div>
+          <div className="contact__availability">
+            <span /> Available for opportunities
+          </div>
+        </div>
 
-        <div className="contact__grid">
+        <div className="contact__panel">
+          <div className="contact__panel-copy">
+            <span>Start a conversation</span>
+            <h3>Have a role, research idea, or product in mind?</h3>
+            <p>Choose the channel that works best. I&rsquo;ll get back to you as soon as possible.</p>
+          </div>
+          <div className="contact__grid">
           <a className="contact__card" href={`mailto:${profile.email}`}>
             <MailIcon width={20} height={20} />
             <span>
@@ -41,6 +53,7 @@ export default function Contact() {
               <em>LennoxKK</em>
             </span>
           </a>
+          </div>
         </div>
       </div>
     </section>
